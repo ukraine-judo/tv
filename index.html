@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TwoWatch</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&display=swap');
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #14141c;
+            --surface-hover: #1c1c26;
+            --border: #2a2a3a;
+            --text: #e8e6e3;
+            --text-dim: #7a7a8c;
+            --accent: #e07a5f;
+            --accent-hover: #e8937a;
+            --success: #81b29a;
+            --error: #e07a5f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Syne', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .session-id-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .session-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .session-id {
+            font-family: monospace;
+            font-size: 1rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            padding: 6px;
+            cursor: pointer;
+            color: var(--text-dim);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+
+        .copy-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+            box-shadow: 0 0 12px var(--success);
+        }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 24px;
+            overflow: hidden;
+        }
+
+        /* Video container */
+        .video-container {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .video-placeholder {
+            text-align: center;
+            color: var(--text-dim);
+        }
+
+        .video-placeholder svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .video-placeholder p {
+            font-size: 0.95rem;
+        }
+
+        /* Controls */
+        .controls {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 20px 24px;
+            border: 1px solid var(--border);
+        }
+
+        .progress-container {
+            margin-bottom: 16px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .progress-loaded {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--surface-hover);
+            border-radius: 3px;
+            width: 0%;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--surface-hover);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Session modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 480px;
+            width: 90%;
+        }
+
+        .modal h2 {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+
+        .modal p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: none;
+        }
+
+        .input-group textarea {
+            height: 100px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 200;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--error);
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header {
+                padding: 16px;
+            }
+
+            .main {
+                padding: 16px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading .status-dot {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="session-id-container">
+            <span class="session-label">ID сессии:</span>
+            <span class="session-id" id="sessionId">—</span>
+            <button class="copy-btn" id="copySessionId" title="Копировать">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="status" id="status">
+            <span class="status-dot"></span>
+            <span id="statusText">Ожидание</span>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="video-container" id="videoContainer">
+            <video id="video" playsinline controls></video>
+            <div class="video-placeholder" id="placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <p id="placeholderText">Загрузите видео или подключитесь к сессии</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-loaded" id="progressLoaded"></div>
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="time-display">
+                    <span id="currentTime">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+            <div class="buttons">
+                <input type="file" id="fileInput" accept="video/*">
+                <button class="btn btn-primary" id="loadBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    Загрузить видео
+                </button>
+                <button class="btn btn-secondary" id="showSessionBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
+                    </svg>
+                    Показать ID
+                </button>
+                <button class="btn btn-secondary" id="joinBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+                    </svg>
+                    Присоединиться
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Session ID Modal -->
+    <div class="modal" id="sessionModal">
+        <div class="modal-content">
+            <h2>Ваш ID сессии</h2>
+            <p>Отправьте этот ID партнёру. Он введёт его при подключении.</p>
+            <div class="input-group">
+                <input type="text" id="sessionIdInput" readonly>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="copySessionBtn">Копировать</button>
+                <button class="btn btn-primary" id="closeSessionModal">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Modal -->
+    <div class="modal" id="joinModal">
+        <div class="modal-content">
+            <h2>Присоединиться</h2>
+            <p>Вставьте ID сессии вашего партнёра для подключения.</p>
+            <div class="input-group">
+                <label>ID сессии</label>
+                <input type="text" id="remoteId" placeholder="Введите ID...">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="closeJoinModal">Отмена</button>
+                <button class="btn btn-primary" id="connectBtn">Подключиться</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const CHUNK_SIZE = 256 * 1024;
+
+        const peer = new Peer();
+
+        let connection = null;
+        let isHost = false;
+        let isSyncing = false;
+        let hostFile = null;
+        let expectedSize = 0;
+        let receivedChunks = [];
+        let receivedCount = 0;
+
+        const video = document.getElementById('video');
+        const fileInput = document.getElementById('fileInput');
+        const progressFill = document.getElementById('progressFill');
+        const progressLoaded = document.getElementById('progressLoaded');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        const statusDot = document.querySelector('.status-dot');
+        const statusText = document.getElementById('statusText');
+        const placeholder = document.getElementById('placeholder');
+        const placeholderText = document.getElementById('placeholderText');
+
+        peer.on('open', id => {
+            document.getElementById('sessionId').textContent = id;
+            document.getElementById('sessionIdInput').value = id;
+            statusText.textContent = 'Онлайн';
+            statusDot.classList.add('connected');
+        });
+
+        peer.on('connection', conn => {
+            connection = conn;
+            setupConnection();
+        });
+
+        peer.on('error', err => {
+            console.error('Peer error:', err);
+            showToast('Ошибка: ' + err.type, 'error');
+        });
+
+        peer.on('disconnected', () => {
+            statusDot.classList.remove('connected');
+            statusText.textContent = 'Отключено';
+        });
+
+        function setupConnection() {
+            connection.on('data', handleIncomingData);
+            connection.on('close', () => {
+                connection = null;
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'Отключено';
+                showToast('Соединение потеряно', 'error');
+            });
+            statusDot.classList.add('connected');
+            statusText.textContent = 'Подключено';
+            showToast('Соединение установлено!', 'success');
+
+            if (isHost && hostFile) {
+                sendVideo(hostFile);
+            }
+        }
+
+        function handleIncomingData(data) {
+            if (data && data.type === 'sync') {
+                handleSync(data);
+                return;
+            }
+            if (typeof data === 'object' && data.type === 'video-start') {
+                expectedSize = data.size;
+                receivedChunks = [];
+                receivedCount = 0;
+                placeholder.style.display = 'block';
+                placeholderText.textContent = 'Загружаю видео... 0%';
+                progressLoaded.style.width = '0%';
+                return;
+            }
+            if (typeof data === 'number') {
+                // sequence number, ignore
+                return;
+            }
+            if (data instanceof ArrayBuffer) {
+                receivedChunks.push(data);
+                receivedCount++;
+                const received = receivedChunks.reduce((s, c) => s + c.byteLength, 0);
+                const pct = Math.min(Math.round(received / expectedSize * 100), 100);
+                placeholderText.textContent = 'Загружаю видео... ' + pct + '%';
+                progressLoaded.style.width = pct + '%';
+
+                const needed = Math.ceil(expectedSize / CHUNK_SIZE);
+                if (receivedCount >= needed) {
+                    const blob = new Blob(receivedChunks, { type: 'video/mp4' });
+                    video.src = URL.createObjectURL(blob);
+                    placeholder.style.display = 'none';
+                    progressLoaded.style.width = '100%';
+                    showToast('Видео загружено!', 'success');
+                }
+            }
+        }
+
+        function handleSync(data) {
+            isSyncing = true;
+            if (data.action === 'play') {
+                video.currentTime = data.time;
+                video.play().catch(() => {});
+            } else if (data.action === 'pause') {
+                video.currentTime = data.time;
+                video.pause();
+            } else if (data.action === 'seek') {
+                video.currentTime = data.time;
+            }
+            setTimeout(() => { isSyncing = false; }, 100);
+        }
+
+        function sendSync(action) {
+            if (isSyncing) return;
+            if (connection && connection.open) {
+                connection.send({ type: 'sync', action: action, time: video.currentTime });
+            }
+        }
+
+        // --- Host: load & send video ---
+        document.getElementById('loadBtn').addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            isHost = true;
+            hostFile = file;
+
+            video.src = URL.createObjectURL(file);
+            placeholder.style.display = 'none';
+            showToast('Видео загружено локально', 'success');
+
+            if (connection && connection.open) {
+                sendVideo(file);
+            } else {
+                showToast('Видео загружено. Подключите партнёра для передачи.', 'success');
+            }
+        });
+
+        async function sendVideo(file) {
+            const buffer = await file.arrayBuffer();
+            const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
+
+            connection.send({ type: 'video-start', size: buffer.byteLength });
+
+            let offset = 0;
+            for (let i = 0; i < totalChunks; i++) {
+                const chunk = buffer.slice(offset, offset + CHUNK_SIZE);
+                connection.send(chunk);
+                offset += CHUNK_SIZE;
+                const pct = Math.round((i + 1) / totalChunks * 100);
+                progressLoaded.style.width = pct + '%';
+                placeholderText.textContent = 'Передача... ' + pct + '%';
+
+                if (i % 5 === 0) {
+                    await new Promise(r => setTimeout(r, 0));
+                }
+            }
+
+            placeholder.style.display = 'none';
+            progressLoaded.style.width = '100%';
+            showToast('Видео передано!', 'success');
+        }
+
+        // --- Video controls sync ---
+        video.addEventListener('play', () => { if (!isSyncing) sendSync('play'); });
+        video.addEventListener('pause', () => { if (!isSyncing) sendSync('pause'); });
+
+        video.addEventListener('timeupdate', () => {
+            currentTimeEl.textContent = formatTime(video.currentTime);
+            if (video.duration) {
+                progressFill.style.width = (video.currentTime / video.duration * 100) + '%';
+            }
+        });
+
+        video.addEventListener('loadedmetadata', () => {
+            durationEl.textContent = formatTime(video.duration);
+        });
+
+        progressBar.addEventListener('click', (e) => {
+            if (!video.duration) return;
+            const rect = progressBar.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pct * video.duration;
+            sendSync('seek');
+        });
+
+        // --- UI buttons ---
+        document.getElementById('showSessionBtn').addEventListener('click', () => {
+            if (!peer.id) {
+                showToast('Подождите, ID ещё не создан', 'error');
+                return;
+            }
+            document.getElementById('sessionModal').classList.add('active');
+        });
+
+        document.getElementById('copySessionBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(document.getElementById('sessionIdInput').value);
+            showToast('ID скопирован!', 'success');
+        });
+
+        document.getElementById('copySessionId').addEventListener('click', () => {
+            const id = document.getElementById('sessionId').textContent;
+            if (id === '—') return;
+            navigator.clipboard.writeText(id);
+            showToast('ID скопирован!', 'success');
+        });
+
+        document.getElementById('closeSessionModal').addEventListener('click', () => {
+            document.getElementById('sessionModal').classList.remove('active');
+        });
+
+        document.getElementById('joinBtn').addEventListener('click', () => {
+            document.getElementById('joinModal').classList.add('active');
+        });
+
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            const remoteId = document.getElementById('remoteId').value.trim();
+            if (!remoteId) {
+                showToast('Введите ID сессии', 'error');
+                return;
+            }
+            isHost = false;
+            connection = peer.connect(remoteId, { reliable: true });
+            connection.on('open', () => {
+                setupConnection();
+                document.getElementById('joinModal').classList.remove('active');
+            });
+        });
+
+        document.getElementById('closeJoinModal').addEventListener('click', () => {
+            document.getElementById('joinModal').classList.remove('active');
+        });
+
+        function formatTime(s) {
+            if (isNaN(s)) return '0:00';
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return m + ':' + String(sec).padStart(2, '0');
+        }
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show ' + (type || '');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
